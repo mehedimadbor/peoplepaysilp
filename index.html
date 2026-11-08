@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PeoplePayslip</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>:root{--bg:#eef1f4;--surface:#fff;--s2:#f5f7f8;--ink:#14201b;--muted:#5d6b64;--line:#d8dfdb;--accent:#0f6b4f;--accent-ink:#fff;--soft:#dcefe6;--warn:#b4540a;--warn-soft:#fbe6d2;--danger:#b3261e;color-scheme:light;--disp:"Plus Jakarta Sans","Hind Siliguri","Noto Sans Bengali",sans-serif;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1411;--surface:#17201c;--s2:#1d2823;--ink:#e6eee9;--muted:#96a69d;--line:#2a3830;--accent:#4cc79b;--accent-ink:#052116;--soft:#1d3a2e;--warn:#f0a35e;--warn-soft:#3b2a1a;--danger:#ff8a80;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1411;--surface:#17201c;--s2:#1d2823;--ink:#e6eee9;--muted:#96a69d;--line:#2a3830;--accent:#4cc79b;--accent-ink:#052116;--soft:#1d3a2e;--warn:#f0a35e;--warn-soft:#3b2a1a;--danger:#ff8a80;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hind Siliguri","Noto Sans Bengali","Segoe UI",Roboto,Arial,sans-serif;line-height:1.55}
+.app{max-width:1240px;margin:0 auto;padding:14px 16px 60px}
+.bar{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:800;font-size:1.25rem;letter-spacing:-.02em}
+.brand svg{width:30px;height:30px;color:var(--accent)}
+.sp{flex:1}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;border-radius:999px;padding:5px 12px;font-size:.82rem;color:var(--muted)}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.steps{display:flex;gap:8px;list-style:none;margin:0 0 14px;padding:0;counter-reset:s}
+.steps li{flex:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-size:.88rem;color:var(--muted);counter-increment:s}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);font:700 .75rem var(--disp);flex:none}
+.steps li.now{color:var(--ink);border-color:var(--accent)}
+.steps li.now::before{border-color:var(--accent);color:var(--accent)}
+.steps li.done{color:var(--ink)}
+.steps li.done::before{content:"✓";background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.panel h2{font-size:1rem;margin:0 0 12px}
+.hero{display:grid;grid-template-columns:1.25fr 1fr;gap:22px;padding:22px}
+.cap{color:var(--muted);font-size:.9rem}
+.amt{font:800 clamp(2rem,5vw,3.2rem)/1.1 var(--disp);letter-spacing:-.03em;margin:4px 0 14px;color:var(--accent);font-variant-numeric:tabular-nums;word-break:break-word}
+.split{display:flex;height:12px;border-radius:99px;overflow:hidden;background:var(--line)}
+.split i{display:block;transition:width .5s}
+.split .n{background:var(--accent)}.split .d{background:var(--warn)}
+.legend{display:flex;gap:16px;margin-top:8px;font-size:.84rem;color:var(--muted);flex-wrap:wrap}
+.legend b{font-weight:600;color:var(--ink)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.mini div{background:var(--s2);border-radius:10px;padding:9px 11px}
+.mini small{display:block;color:var(--muted);font-size:.76rem}
+.mini b{font:700 1rem var(--disp);font-variant-numeric:tabular-nums;word-break:break-word}
+.mini .w b{color:var(--warn)}
+.dr{display:grid;grid-template-columns:minmax(70px,.8fr) 2fr auto;gap:10px;align-items:center;font-size:.84rem;margin-top:6px}
+.dr i{display:block;height:8px;border-radius:99px;background:var(--soft);position:relative}
+.dr i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:var(--accent);border-radius:99px}
+.dr b{font-variant-numeric:tabular-nums;font-weight:600}
+.cols{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media(min-width:980px){.cols{grid-template-columns:minmax(0,1fr) 340px}.live{position:sticky;top:12px}}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=number],input[type=tel],input[type=month],input[type=date],input[type=search],select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--s2);color:var(--ink);font:inherit}
+button,.btn{font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.ghost{padding:5px 10px;font-size:.85rem}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+details.panel summary{cursor:pointer;font-weight:600;list-style:none}
+details.panel summary::-webkit-details-marker{display:none}
+details.panel summary::after{content:"▾";float:right;color:var(--muted)}
+details[open] summary{margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted)}
+.drop.over{border-color:var(--accent);background:var(--soft)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--s2)}
+tbody tr.act{background:var(--soft)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{color:var(--muted);font-weight:600;font-size:.82rem}
+.net{font-weight:700;color:var(--accent)}.ded{color:var(--warn)}
+.who{display:flex;gap:10px;align-items:center}
+.who small{display:block;color:var(--muted);line-height:1.2}
+.av{width:34px;height:34px;border-radius:50%;background:var(--soft);color:var(--accent);display:grid;place-items:center;font-weight:700;flex:none}
+.tag{background:var(--s2);border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:.8rem}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{border-radius:99px;padding:3px 12px;font-size:.84rem;color:var(--muted)}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.empty{padding:30px 10px;text-align:center;color:var(--muted)}
+.msg{font-size:.88rem;color:var(--muted);margin-top:8px}.msg.err{color:var(--danger)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:16px;max-width:96vw}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+.pvhead{font-weight:600;margin-bottom:10px}
+.prevbox{background:#cfd5d1;padding:14px;border-radius:10px;margin-bottom:12px;max-height:68vh;overflow:auto}
+.paper{position:relative;width:80mm;max-width:100%;margin:0 auto 20px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.paper::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:6px;background:conic-gradient(from -45deg at bottom,#0000,#fff 1deg 89deg,#0000 90deg) 50%/12px 100%}
+.liveBox{background:var(--s2);border-radius:10px;padding:14px 8px 20px;min-height:200px;overflow:hidden;max-height:calc(100vh - 150px);overflow-y:auto}
+.liveBox .paper{margin-bottom:6px}
+.feed{animation:feed .5s ease-out}
+@keyframes feed{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}
+@media(prefers-reduced-motion:reduce){.feed{animation:none}.split i{transition:none}}
+.ph{padding:40px 12px;text-align:center;color:var(--muted)}
+#printArea{display:none}
+.foot{display:flex;justify-content:center;gap:12px;margin-top:28px;padding-top:20px;border-top:1px solid var(--line)}
+.foot a{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);transition:color .15s,border-color .15s}
+.foot a:hover,.foot a:focus-visible{color:var(--accent);border-color:var(--accent);outline:none}
+.foot svg{width:20px;height:20px}
+#edlg{width:min(580px,96vw);max-height:92vh;overflow:auto}
+.eh{display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px}
+.ln{display:grid;grid-template-columns:1fr 120px auto;gap:6px;margin-bottom:6px}
+.netline{display:flex;justify-content:space-between;margin:14px 0;padding:10px 12px;background:var(--soft);border-radius:10px;font-weight:700}
+.netline b{color:var(--accent);font-variant-numeric:tabular-nums}
+@media(max-width:700px){.hero{grid-template-columns:1fr}.hm{display:none}.steps li span{display:none}.seg button{padding:5px 9px}}
+
+/* Slip (80mm thermal) */
+.slip{width:72mm;margin:0 auto;padding:2mm 0;font-family:"Noto Sans Bengali","Segoe UI",Arial,sans-serif;font-size:12px;line-height:1.35;color:#000;background:#fff}
+.slip .c{text-align:center}
+.slip .co{font-size:16px;font-weight:700}
+.slip .t{font-size:13px;font-weight:700;margin-top:2px}
+.slip hr{border:0;border-top:1px dashed #000;margin:5px 0}
+.slip .r{display:flex;justify-content:space-between;gap:6px}
+.slip .r span:last-child{text-align:right;white-space:nowrap}
+.slip .h{font-weight:700;margin:3px 0 1px}
+.slip .tot{font-weight:700;border-top:1px solid #000;margin-top:2px;padding-top:2px}
+.slip .netbox{border:2px solid #000;padding:3px 4px;margin:6px 0;font-size:14px;font-weight:700}
+.slip .sig{display:flex;justify-content:space-between;margin-top:26px;font-size:10.5px}
+.slip .sig div{border-top:1px solid #000;padding-top:2px;width:44%;text-align:center}
+.slip .ft{text-align:center;margin-top:8px;border-top:1px dashed #000;padding-top:4px;font-size:11px}
+.slip .brk{page-break-after:always;break-after:page}
+
+@page{size:80mm auto;margin:0}
+@media print{
+ html,body{background:#fff!important}
+ .app,dialog{display:none!important}
+ #printArea{display:block}
+ .slip{padding:3mm 0 6mm}
+}
+</style>
+<script>try{var t=localStorage.getItem("ppTheme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+</head>
+<body>
+<div class="app">
+ <header class="bar">
+  <div class="brand"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h18v26l-3-2-3 2-3-2-3 2-3-2-3 2z"/><path d="M12 10h8M12 15h8M12 20h4"/></svg>PeoplePayslip</div>
+  <div class="sp"></div>
+  <div class="seg" id="theme" role="group" aria-label="Theme">
+   <button data-t="system" title="System default" aria-pressed="true">System</button>
+   <button data-t="light" aria-pressed="false">Light</button>
+   <button data-t="dark" aria-pressed="false">Dark</button>
+  </div>
+ </header>
+
+ <ol class="steps" id="steps"><li><span>ফাইল আপলোড</span></li><li><span>কর্মরত সদস্য নির্বাচন</span></li><li><span>প্রিন্ট</span></li></ol>
+
+ <section class="panel hero" aria-label="ড্যাশবোর্ড">
+  <div>
+   <div class="cap">মোট প্রদেয় বেতন <span id="dashMonth"></span></div>
+   <div class="amt" id="stNet">৳ 0.00</div>
+   <div class="split" aria-hidden="true"><i class="n" id="barN" style="width:100%"></i><i class="d" id="barD" style="width:0"></i></div>
+   <div class="legend"><span><span class="dot" style="background:var(--accent)"></span>নিট বেতন <b id="pN">100%</b></span><span><span class="dot" style="background:var(--warn)"></span>কর্তন <b id="pD">0%</b></span></div>
+  </div>
+  <div>
+   <div class="mini"><div><small>কর্মরত সদস্য</small><b id="stEmp">0 জন</b></div><div><small>মোট আয়</small><b id="stGross">৳ 0.00</b></div><div class="w"><small>মোট কর্তন</small><b id="stDed">৳ 0.00</b></div></div>
+   <div id="depts"></div>
+  </div>
+ </section>
+
+ <div class="cols">
+  <main>
+   <details class="panel" open>
+    <summary>পে-স্লিপ সেটিং</summary>
+    <div class="grid">
+     <div><label for="company">প্রতিষ্ঠানের নাম</label><input type="text" id="company" value="একিউর এগ্রো ফুড এন্ড নিউট্রিশন"></div>
+     <div><label for="address">ঠিকানা (ঐচ্ছিক)</label><input type="text" id="address" value="৬০, ওমর আলী লেন, রামপুরা, ঢাকা-১২১২" placeholder="ঢাকা, বাংলাদেশ"></div>
+     <div><label for="phone">ফোন নম্বর (ঐচ্ছিক)</label><input type="tel" id="phone" inputmode="tel" placeholder="01XXXXXXXXX"></div>
+     <div><label for="footer">স্লিপের ফুটার লেখা</label><input type="text" id="footer" value="Thanks for your Service."></div>
+     <div><label for="month">বেতনের মাস</label><input type="month" id="month"></div>
+     <div><label for="paydate">পরিশোধের তারিখ</label><input type="date" id="paydate"></div>
+    </div>
+   </details>
+
+   <section class="panel">
+    <div class="drop" id="drop">
+     <p style="margin:0 0 10px">.xlsx, .xls বা .csv ফাইল এখানে টেনে এনে ছাড়ুন</p>
+     <div class="row" style="justify-content:center">
+      <button class="primary" id="pick">ফাইল নির্বাচন করুন</button>
+      <button id="sample">নমুনা ডেটা লোড করুন</button>
+      <button id="dlsample">নমুনা CSV ডাউনলোড</button>
+     </div>
+     <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+    </div>
+    <p class="msg">কলামের নাম: Name, ID, Designation, Department, Basic, House Rent, Medical, Transport, Food, Allowance, Bonus, Overtime, Advance, Loan, Tax, PF, Absent, Deduction, Net। বাংলা নামও চলবে।</p>
+    <div class="row" id="sheetRow" style="display:none;margin-top:10px"><label for="sheetSel" style="margin:0">মাসের শিট:</label><select id="sheetSel" style="width:auto;max-width:100%"></select></div>
+    <p class="msg" id="status"></p>
+   </section>
+
+   <section class="panel">
+    <div class="row" style="margin-bottom:12px">
+     <h2 style="margin:0">কর্মরত সদস্য তালিকা <span id="count" class="msg"></span></h2>
+     <div class="sp"></div>
+     <input type="search" id="q" placeholder="নাম, আইডি বা বিভাগ অনুসন্ধান করুন" style="max-width:230px">
+     <button id="previewBtn" disabled>প্রিন্ট প্রিভিউ</button>
+     <button class="primary" id="printSel" disabled>নির্বাচিত প্রিন্ট করুন</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="wrap">
+     <table>
+      <thead><tr><th><input type="checkbox" id="all" aria-label="সব নির্বাচন"></th><th>কর্মরত সদস্য</th><th class="hm">বিভাগ</th><th class="n hm">মোট আয়</th><th class="n hm">কর্তন</th><th class="n">নিট বেতন</th><th></th></tr></thead>
+      <tbody id="tb"></tbody>
+     </table>
+     <div class="empty" id="empty">এখনো কোনো কর্মরত সদস্যের তথ্য যুক্ত করা হয়নি। উপরে ফাইল আপলোড করুন অথবা নমুনা ডেটা লোড করুন।</div>
+    </div>
+   </section>
+  </main>
+
+  <aside class="live panel" aria-label="লাইভ প্রিভিউ">
+   <h2>লাইভ প্রিভিউ</h2>
+   <div class="liveBox" id="livePaper"></div>
+   <div class="row" style="margin-top:12px"><button class="primary" id="livePrint" disabled>এই স্লিপ প্রিন্ট করুন</button><button id="liveEdit" disabled>সম্পাদনা করুন</button></div>
+  </aside>
+ </div>
+ <footer class="foot">
+  <a href="https://github.com/mehedimadbor" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.69 1.25 3.35.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg></a>
+  <a href="https://www.facebook.com/mehedimadborr" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.69.24 2.69.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.88v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/></svg></a>
+  <a href="https://www.instagram.com/mehedimadborr" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
+ </footer>
+</div>
+
+<dialog id="dlg">
+ <div class="pvhead" id="pvHead"></div>
+ <div class="prevbox" id="prev"></div>
+ <div class="row"><button class="primary" id="prevPrint">প্রিন্ট করুন</button><button id="prevClose">বন্ধ করুন</button></div>
+</dialog>
+<dialog id="edlg">
+ <h2 style="margin:0 0 12px">পে-স্লিপ সম্পাদনা</h2>
+ <div class="grid">
+  <div><label for="eId">আইডি</label><input type="text" id="eId"></div>
+  <div><label for="eName">নাম</label><input type="text" id="eName"></div>
+  <div><label for="eDesig">পদবি</label><input type="text" id="eDesig"></div>
+  <div><label for="eDept">বিভাগ</label><input type="text" id="eDept"></div>
+  <div><label for="eBasic">মূল বেতন</label><input type="number" step="any" id="eBasic" inputmode="decimal"></div>
+ </div>
+ <div class="eh"><b>আয়</b><button type="button" class="ghost" data-add="eEarn">আয়ের খাত যোগ করুন</button></div><div id="eEarn"></div>
+ <div class="eh"><b>কর্তন</b><button type="button" class="ghost" data-add="eDed">কর্তনের খাত যোগ করুন</button></div><div id="eDed"></div>
+ <div style="margin-top:12px"><label for="eRemark">মন্তব্য (ঐচ্ছিক)</label><input type="text" id="eRemark"></div>
+ <div class="netline"><span>নিট বেতন</span><b id="eNet">৳ 0.00</b></div>
+ <div class="row"><button class="primary" id="eSave">পরিবর্তন সংরক্ষণ করুন</button><button id="eCancel">বাতিল করুন</button><span class="sp"></span><button id="eReset">মূল তথ্যে ফিরুন</button></div>
+ <p class="msg">এই পরিবর্তন শুধু বর্তমান সেশনে প্রযোজ্য, মূল ফাইল পরিবর্তন হবে না।</p>
+</dialog>
+<div id="printArea"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+let emps=[], sel=new Set(), curList=[];
+
+/* Settings persistence */
+function save(){try{localStorage.setItem('slipCfg',JSON.stringify({c:$('company').value,a:$('address').value,p:$('phone').value,f:$('footer').value}))}catch(e){}}
+(function init(){
+ const d=new Date();
+ $('month').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+ $('paydate').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+ try{const s=JSON.parse(localStorage.getItem('slipCfg')||'null');if(s){$('company').value=s.c||$('company').value;$('address').value=s.a||'';$('phone').value=s.p||'';if(s.f!=null)$('footer').value=s.f}}catch(e){}
+ ['company','address','phone','footer'].forEach(i=>$(i).addEventListener('input',save));
+})();
+
+/* Column detection */
+const norm=s=>String(s).toLowerCase().replace(/[^a-z0-9\u0980-\u09FF]/g,'');
+const EARN=[['house','House Rent',['house','rent','বাড়ি']],['medical','Medical',['medical','মেডিকেল']],['transport','Transport',['transport','conveyance','যাতায়াত']],['food','Food',['food','খাবার']],['bonus','Bonus',['bonus','বোনাস']],['overtime','Overtime',['overtime','ওভারটাইম']],['allowance','Allowance',['allowance','ভাতা']]];
+const DED=[['advance','Advance',['advance','অগ্রিম']],['loan','Loan',['loan','ঋণ']],['tax','Tax',['tax','ট্যাক্স']],['pf','PF',['pf','provident']],['absent','Absent',['absent','অনুপস্থিত']],['deduction','Deduction',['deduction','কর্তন']]];
+const has=(h,arr)=>arr.some(a=>h.includes(a));
+function num(v){const n=parseFloat(String(v).replace(/[^0-9.\-]/g,''));return isNaN(n)?0:n}
+
+function classify(h){
+ if(has(h,['name','নাম'])&&!has(h,['company'])) return ['name'];
+ if(h==='id'||has(h,['empid','employeeid','staffid','আইডি','সিরিয়াল'])) return ['id'];
+ if(has(h,['designation','position','পদবি','পদবী'])) return ['desig'];
+ if(has(h,['department','dept','বিভাগ'])) return ['dept'];
+ if(has(h,['basic','মূলবেতন','বেসিক'])) return ['basic'];
+ if(has(h,['net','payable','নিট','নীট'])) return ['net'];
+ for(const d of DED) if(has(h,d[2])) return ['ded',d[1]];
+ for(const e of EARN) if(has(h,e[2])) return ['earn',e[1]];
+ return null;
+}
+
+function build(rows){
+ const out=[];
+ rows.forEach((r,i)=>{
+  const e={id:'',name:'',desig:'',dept:'',basic:0,earn:[],ded:[],net:null};
+  for(const k in r){
+   const c=classify(norm(k)); if(!c) continue;
+   const v=r[k];
+   if(c[0]==='name'||c[0]==='id'||c[0]==='desig'||c[0]==='dept') e[c[0]]=String(v).trim();
+   else if(c[0]==='basic') e.basic=num(v);
+   else if(c[0]==='net'){ if(String(v).trim()!=='') e.net=num(v) }
+   else{ const n=num(v); if(n) e[c[0]].push({label:c[1],amt:n}) }
+  }
+  if(!e.name) return;
+  if(!e.id) e.id=String(i+1);
+  e.gross=e.basic+e.earn.reduce((s,x)=>s+x.amt,0);
+  e.tded=e.ded.reduce((s,x)=>s+x.amt,0);
+  if(e.net===null) e.net=e.gross-e.tded;
+  out.push(e);
+ });
+ return out;
+}
+
+/* File loading */
+function status(t,err){const s=$('status');s.textContent=t;s.className='msg'+(err?' err':'')}
+function loadRows(rows){
+ $('sheetRow').style.display='none'; emps=build(rows); sel=new Set(); render();
+ if(emps.length) status(emps.length+' জন কর্মরত সদস্যের তথ্য আমদানি করা হয়েছে।');
+ else status('কোনো কর্মরত সদস্যের তথ্য পাওয়া যায়নি। কলামের নাম (যেমন Name, Basic) ঠিক আছে কিনা দেখুন।',true);
+}
+function readFile(f){
+ if(!f) return;
+ if(typeof XLSX==='undefined'){status('Excel পড়ার লাইব্রেরি লোড হয়নি। ইন্টারনেট সংযোগ দেখে পেজটি রিফ্রেশ করুন।',true);return}
+ const rd=new FileReader();
+ rd.onload=ev=>{
+  try{
+   const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+   sheets={};
+   wb.SheetNames.forEach(n=>{const p=parseReport(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:null,raw:true}));if(p.list.length)sheets[n]=p});
+   const names=Object.keys(sheets);
+   if(names.length){
+    $('sheetSel').innerHTML=names.map(n=>'<option>'+esc(n)+'</option>').join('');
+    $('sheetSel').value=names[names.length-1];
+    $('sheetRow').style.display='flex';
+    useSheet();
+   }else{
+    loadRows(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}));
+   }
+  }catch(err){status('ফাইল পড়া যায়নি: '+err.message,true)}
+ };
+ rd.readAsArrayBuffer(f);
+}
+$('pick').onclick=()=>$('file').click();
+$('file').onchange=e=>{readFile(e.target.files[0]);e.target.value=''};
+const drop=$('drop');
+['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>readFile(e.dataTransfer.files[0]));
+
+const SAMPLE=[
+ {ID:'E001',Name:'রহিম উদ্দিন',Designation:'Manager',Department:'Admin',Basic:30000,'House Rent':15000,Medical:3000,Transport:2500,Bonus:0,Advance:2000,Tax:500},
+ {ID:'E002',Name:'Karim Hossain',Designation:'Accountant',Department:'Accounts',Basic:22000,'House Rent':11000,Medical:2000,Transport:1500,Overtime:1200,Advance:0,Tax:0},
+ {ID:'E003',Name:'সুমি আক্তার',Designation:'Sales Executive',Department:'Sales',Basic:18000,'House Rent':9000,Medical:1500,Transport:1000,Bonus:2000,Absent:600,PF:900}
+];
+$('sample').onclick=()=>loadRows(SAMPLE);
+$('dlsample').onclick=()=>{
+ const keys=[...new Set(SAMPLE.flatMap(Object.keys))],q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+ const csv=[keys.map(q).join(','),...SAMPLE.map(r=>keys.map(k=>q(r[k])).join(','))].join('\n');
+ const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='sample-salary.csv';a.click();
+};
+
+/* Report-style sheets (sections: SHOWROOM, OFFICE, FACTORY ...) */
+let sheets={};
+const MONTHS={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+const ABBR={pta:'Product Target',od:'Over Duty',sta:'Sales Target',special:'Special Incentive'};
+const DEDK={absent:'Absent',fine:'Fine',loan:'Loan',paid:'Already Paid'};
+function add(list,label,amt){if(!amt)return;const f=list.find(x=>x.label===label);f?f.amt+=amt:list.push({label,amt})}
+function parseReport(rows){
+ const list=[];let section='',m=0,y=0;
+ for(let i=0;i<rows.length;i++){
+  const r=rows[i]||[];
+  for(const c of r){if(typeof c==='string'){
+   const mm=c.match(/month\s*:\s*([A-Za-z]+)/i);if(mm&&MONTHS[mm[1].slice(0,3).toLowerCase()])m=MONTHS[mm[1].slice(0,3).toLowerCase()];
+   const yy=c.match(/year\s*:?\s*(\d{4})/i);if(yy)y=+yy[1];
+  }}
+  const a=r[0]==null?'':String(r[0]).trim();
+  const sm=a.match(/<>\s*(.*?)\s*<>/);
+  if(sm&&!/employee/i.test(sm[1]))section=sm[1].replace(/salary/i,'').trim();
+  const hi=r.findIndex(c=>c!=null&&String(c).trim().toLowerCase()==='salary');
+  if(hi<0)continue;
+  const cols=[];let netI=-1,remI=-1;
+  for(let j=2;j<r.length;j++){
+   if(r[j]==null)continue;
+   const k=String(r[j]).toLowerCase().replace(/[^a-z]/g,'');
+   if(!k)continue;
+   if(k==='remark'){remI=j;break}
+   if(k==='salary')cols.push([j,'basic']);
+   else if(k==='gtotal')continue;
+   else if(k==='total')netI=j;
+   else if(DEDK[k])cols.push([j,'ded',DEDK[k]]);
+   else cols.push([j,'earn',ABBR[k]||String(r[j]).trim()]);
+  }
+  let j=i+1;
+  for(;j<rows.length;j++){
+   const e=rows[j]||[];
+   const s=e[0]==null?'':String(e[0]).trim(),n=e[1]==null?'':String(e[1]).trim();
+   if(!s&&!n)break;
+   if(!n)continue;
+   const emp={id:s,name:n,desig:'',dept:section,basic:0,earn:[],ded:[],net:null,remark:''};
+   cols.forEach(c=>{const v=num(e[c[0]]);if(c[1]==='basic')emp.basic=v;else if(c[1]==='earn')add(emp.earn,c[2],v);else add(emp.ded,c[2],v)});
+   if(remI>=0&&typeof e[remI]==='string')emp.remark=e[remI].trim();
+   emp.gross=emp.basic+emp.earn.reduce((t,x)=>t+x.amt,0);
+   emp.tded=emp.ded.reduce((t,x)=>t+x.amt,0);
+   emp.net=(netI>=0&&typeof e[netI]==='number')?e[netI]:emp.gross-emp.tded;
+   if(emp.basic||emp.gross)list.push(emp);
+  }
+  i=j;
+ }
+ return {list,m,y};
+}
+function useSheet(){
+ const p=sheets[$('sheetSel').value];
+ emps=p.list;sel=new Set();
+ if(p.m&&p.y)$('month').value=p.y+'-'+String(p.m).padStart(2,'0');
+ render();
+ status(emps.length+' জন কর্মরত সদস্যের তথ্য আমদানি করা হয়েছে ('+Object.keys(sheets).length+'টি মাসের শিট পাওয়া গেছে)।');
+}
+$('sheetSel').onchange=useSheet;
+
+/* Table */
+const fmt=n=>Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money=n=>'৳ '+fmt(n);
+const wide=matchMedia('(min-width:980px)');
+let act=-1,dept='',lastAct=-2;
+function visible(){const q=$('q').value.trim().toLowerCase();return emps.map((e,i)=>({e,i})).filter(x=>(!dept||x.e.dept===dept)&&(!q||x.e.name.toLowerCase().includes(q)||x.e.id.toLowerCase().includes(q)||x.e.dept.toLowerCase().includes(q)))}
+function render(){
+ const depts=[...new Set(emps.map(e=>e.dept).filter(Boolean))];
+ if(dept&&!depts.includes(dept))dept='';
+ const v=visible();
+ if(!v.some(x=>x.i===act))act=v.length?v[0].i:-1;
+ $('chips').innerHTML=depts.length>1?['',...depts].map(d=>`<button class="chip${d===dept?' on':''}" data-d="${esc(d)}">${d?esc(d):'সব বিভাগ'}</button>`).join(''):'';
+ $('tb').innerHTML=v.map(({e,i})=>`<tr data-r="${i}" class="${i===act?'act':''}"><td><input type="checkbox" data-i="${i}" ${sel.has(i)?'checked':''} aria-label="নির্বাচন"></td><td><div class="who"><span class="av">${esc([...e.name.trim()][0]||'?')}</span><div><b>${esc(e.name)}</b>${e.edited?' <span class="tag">সম্পাদিত</span>':''}<small>${esc(e.id)}</small></div></div></td><td class="hm"><span class="tag">${esc(e.dept||e.desig||'—')}</span></td><td class="n hm">${fmt(e.gross)}</td><td class="n hm ded">${fmt(e.tded)}</td><td class="n net">${fmt(e.net)}</td><td><div class="row" style="flex-wrap:nowrap;gap:6px"><button class="ghost" data-e="${i}">সম্পাদনা</button><button class="ghost" data-p="${i}">প্রিন্ট</button></div></td></tr>`).join('');
+ $('empty').style.display=v.length?'none':'block';
+ $('count').textContent=emps.length?'('+emps.length+' জন)':'';
+ $('printSel').disabled=!sel.size;
+ $('printSel').textContent=sel.size?'নির্বাচিত '+sel.size+' জনের প্রিন্ট':'নির্বাচিত প্রিন্ট করুন';
+ $('previewBtn').disabled=!emps.length;
+ $('previewBtn').textContent=sel.size?'প্রিন্ট প্রিভিউ ('+sel.size+' জন)':'প্রিন্ট প্রিভিউ (সবাই)';
+ $('all').checked=v.length>0&&v.every(x=>sel.has(x.i));
+ renderLive(act!==lastAct);renderStats();
+ const st=[emps.length>0,sel.size>0,false],now=st.indexOf(false);
+ [...$('steps').children].forEach((li,k)=>{li.className=st[k]?'done':k===now?'now':''});
+}
+function renderLive(feed){
+ const e=emps[act];lastAct=act;
+ $('livePrint').disabled=!e;$('liveEdit').disabled=!e;
+ $('livePaper').innerHTML=e?'<div class="paper'+(feed?' feed':'')+'">'+slip(e)+'</div>':'<div class="ph">কর্মরত সদস্য নির্বাচন করলে এখানে পে-স্লিপ প্রদর্শিত হবে।</div>';
+}
+function renderStats(){
+ const S=k=>emps.reduce((t,e)=>t+(Number(e[k])||0),0),g=S('gross'),d=S('tded'),n=S('net');
+ $('stEmp').textContent=emps.length.toLocaleString('en-IN')+' জন';
+ $('stGross').textContent=money(g);$('stDed').textContent=money(d);$('stNet').textContent=money(n);
+ const pn=g?Math.max(0,Math.min(100,Math.round(n/g*100))):100;
+ $('barN').style.width=pn+'%';$('barD').style.width=(g?100-pn:0)+'%';$('pN').textContent=pn+'%';$('pD').textContent=(g?100-pn:0)+'%';
+ $('dashMonth').textContent=mon()?'('+mon()+')':'';
+ const m={};emps.forEach(e=>{if(e.dept)m[e.dept]=(m[e.dept]||0)+e.net});
+ const a=Object.entries(m).sort((x,y)=>y[1]-x[1]).slice(0,4),mx=a.length?a[0][1]:1;
+ $('depts').innerHTML=a.length>1?a.map(([k,v])=>`<div class="dr"><span>${esc(k)}</span><i style="--w:${Math.max(3,v/mx*100)}%"></i><b>${fmt(v)}</b></div>`).join(''):'';
+}
+['month','company','address','phone','footer','paydate'].forEach(i=>$(i).addEventListener('input',()=>{renderLive(false);renderStats()}));
+$('q').oninput=render;
+$('all').onchange=e=>{visible().forEach(x=>e.target.checked?sel.add(x.i):sel.delete(x.i));render()};
+$('chips').onclick=e=>{const b=e.target.closest('button');if(b){dept=b.dataset.d;render()}};
+$('tb').addEventListener('change',e=>{const i=e.target.dataset.i;if(i===undefined)return;e.target.checked?sel.add(+i):sel.delete(+i);render()});
+$('tb').addEventListener('click',e=>{
+ if(e.target.matches('input'))return;
+ const b=e.target.closest('button');
+ if(b&&b.dataset.p!==undefined){printList([emps[+b.dataset.p]]);return}
+ if(b&&b.dataset.e!==undefined){openEdit(+b.dataset.e);return}
+ const tr=e.target.closest('tr');if(!tr||e.target.closest('td')===tr.firstElementChild)return;
+ act=+tr.dataset.r;
+ document.querySelectorAll('#tb tr').forEach(r=>r.classList.toggle('act',r===tr));
+ renderLive(true);
+ if(!wide.matches)openPreview([emps[act]]);
+});
+$('livePrint').onclick=()=>emps[act]&&printList([emps[act]]);
+$('prevClose').onclick=()=>$('dlg').close();
+$('printSel').onclick=()=>printList([...sel].sort((a,b)=>a-b).map(i=>emps[i]));
+function openPreview(list){
+ if(!list.length)return;
+ curList=list;
+ $('pvHead').textContent='প্রিন্ট প্রিভিউ: '+list.length+'টি পে-স্লিপ (৮০ মিমি পেপার)';
+ $('prev').innerHTML=list.map(e=>'<div class="paper">'+slip(e)+'</div>').join('');
+ $('prev').scrollTop=0;
+ $('dlg').showModal();
+}
+$('previewBtn').onclick=()=>openPreview(sel.size?[...sel].sort((a,b)=>a-b).map(i=>emps[i]):emps.slice());
+$('prevPrint').onclick=()=>{$('dlg').close();printList(curList)};
+
+/* Edit payslip */
+let editI=-1;
+function lineRow(l,a){return `<div class="ln"><input type="text" class="ll" value="${esc(l||'')}" placeholder="খাতের নাম"><input type="number" step="any" class="la" value="${a||''}" placeholder="0.00" inputmode="decimal"><button type="button" class="ghost" data-x aria-label="মুছে ফেলুন">মুছুন</button></div>`}
+function readLines(box){return [...box.querySelectorAll('.ln')].map(r=>({label:r.querySelector('.ll').value.trim(),amt:parseFloat(r.querySelector('.la').value)||0})).filter(x=>x.label&&x.amt)}
+function calcEdit(){
+ const g=(parseFloat($('eBasic').value)||0)+readLines($('eEarn')).reduce((t,x)=>t+x.amt,0);
+ const d=readLines($('eDed')).reduce((t,x)=>t+x.amt,0);
+ $('eNet').textContent=money(g-d);
+}
+function openEdit(i){
+ editI=i;const e=emps[i];
+ $('eId').value=e.id;$('eName').value=e.name;$('eDesig').value=e.desig||'';$('eDept').value=e.dept||'';$('eBasic').value=e.basic||'';$('eRemark').value=e.remark||'';
+ $('eEarn').innerHTML=e.earn.map(x=>lineRow(x.label,x.amt)).join('');
+ $('eDed').innerHTML=e.ded.map(x=>lineRow(x.label,x.amt)).join('');
+ $('eReset').style.display=e.orig?'':'none';
+ calcEdit();$('edlg').showModal();
+}
+$('edlg').addEventListener('input',calcEdit);
+$('edlg').addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.x!==undefined){b.closest('.ln').remove();calcEdit()}
+ if(b.dataset.add){$(b.dataset.add).insertAdjacentHTML('beforeend',lineRow('',''));$(b.dataset.add).lastElementChild.querySelector('input').focus()}
+});
+$('eSave').onclick=()=>{
+ const e=emps[editI];if(!e)return;
+ const name=$('eName').value.trim();
+ if(!name){$('eName').focus();return}
+ if(!e.orig)e.orig=JSON.stringify(e);
+ e.id=$('eId').value.trim()||e.id;e.name=name;e.desig=$('eDesig').value.trim();e.dept=$('eDept').value.trim();
+ e.basic=parseFloat($('eBasic').value)||0;e.remark=$('eRemark').value.trim();
+ e.earn=readLines($('eEarn'));e.ded=readLines($('eDed'));
+ e.gross=e.basic+e.earn.reduce((t,x)=>t+x.amt,0);e.tded=e.ded.reduce((t,x)=>t+x.amt,0);e.net=e.gross-e.tded;e.edited=true;
+ $('edlg').close();act=editI;render();
+};
+$('eReset').onclick=()=>{const e=emps[editI];if(!e||!e.orig)return;const o=JSON.parse(e.orig);Object.assign(e,o);e.orig=null;e.edited=false;$('edlg').close();render()};
+$('eCancel').onclick=()=>$('edlg').close();
+$('liveEdit').onclick=()=>act>=0&&openEdit(act);
+
+/* Theme: System default / Light / Dark */
+function applyTheme(t){
+ const r=document.documentElement;
+ if(t==='light'||t==='dark')r.setAttribute('data-theme',t);else r.removeAttribute('data-theme');
+ document.querySelectorAll('#theme button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));
+}
+(function(){
+ let t='system';
+ try{const v=localStorage.getItem('ppTheme');if(v==='light'||v==='dark')t=v}catch(e){}
+ applyTheme(t);
+ $('theme').onclick=e=>{const b=e.target.closest('button');if(!b)return;applyTheme(b.dataset.t);try{localStorage.setItem('ppTheme',b.dataset.t)}catch(err){}};
+})();
+render();
+
+/* Slip */
+function mon(){const v=$('month').value;if(!v)return'';const [y,m]=v.split('-');return new Date(y,m-1,1).toLocaleDateString('bn-BD',{month:'long',year:'numeric'})}
+function pdate(){const v=$('paydate').value;return v?new Date(v+'T00:00:00').toLocaleDateString('en-GB'):''}
+function rowsHTML(a){return a.map(x=>`<div class="r"><span>${esc(x.label)}</span><span>${fmt(x.amt)}</span></div>`).join('')}
+function slip(e){
+ const earn=[{label:'Basic Salary',amt:e.basic},...e.earn].filter(x=>x.amt);
+ const ded=e.ded;
+ return `<div class="slip">
+ <div class="c co">${esc($('company').value)}</div>
+ ${$('address').value?`<div class="c">${esc($('address').value)}</div>`:''}
+ ${$('phone').value.trim()?`<div class="c">ফোন: ${esc($('phone').value.trim())}</div>`:''}
+ <div class="c t">বেতন বিবরণী</div>
+ <div class="c">${esc(mon())}</div>
+ <hr>
+ <div class="r"><span>আইডি</span><span>${esc(e.id)}</span></div>
+ <div class="r"><span>নাম</span><span>${esc(e.name)}</span></div>
+ ${e.desig?`<div class="r"><span>পদবি</span><span>${esc(e.desig)}</span></div>`:''}
+ ${e.dept?`<div class="r"><span>বিভাগ</span><span>${esc(e.dept)}</span></div>`:''}
+ <hr>
+ <div class="h">আয় (Earnings)</div>
+ ${rowsHTML(earn)}
+ <div class="r tot"><span>মোট আয়</span><span>${fmt(e.gross)}</span></div>
+ <div class="h" style="margin-top:6px">কর্তন (Deductions)</div>
+ ${ded.length?rowsHTML(ded):'<div class="r"><span>কোনো কর্তন নেই</span><span>0.00</span></div>'}
+ <div class="r tot"><span>মোট কর্তন</span><span>${fmt(e.tded)}</span></div>
+ <div class="netbox r"><span>নিট বেতন</span><span>${fmt(e.net)}</span></div>
+ ${e.remark?`<div>মন্তব্য: ${esc(e.remark)}</div>`:''}
+ <div class="r"><span>পরিশোধের তারিখ</span><span>${esc(pdate())}</span></div>
+ <div class="sig"><div>কর্মরত সদস্যের স্বাক্ষর</div><div>কর্তৃপক্ষের স্বাক্ষর</div></div>
+ ${$('footer').value.trim()?`<div class="ft">${esc($('footer').value.trim())}</div>`:''}
+ </div>`;
+}
+function printList(list){
+ if(!list.length)return;
+ $('printArea').innerHTML=list.map((e,i)=>slip(e).replace('class="slip"','class="slip'+(i<list.length-1?' brk':'')+'"')).join('');
+ setTimeout(()=>window.print(),50);
+}
+</script>
+</body>
+</html>
