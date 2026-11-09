@@ -43,7 +43,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hind Siliguri",
 .mini small{display:block;color:var(--muted);font-size:.76rem}
 .mini b{font:700 1rem var(--disp);font-variant-numeric:tabular-nums;word-break:break-word}
 .mini .w b{color:var(--warn)}
-.dr{display:grid;grid-template-columns:minmax(70px,.8fr) 2fr auto;gap:10px;align-items:center;font-size:.84rem;margin-top:6px}
+.dr{display:grid;grid-template-columns:minmax(70px,.8fr) 2fr auto;gap:10px;align-items:center;font-size:.84rem;margin-top:2px;padding:4px 8px;border-radius:8px;cursor:pointer}
+.dr:hover,.dr:focus-visible{background:var(--s2);outline:none}
+.dr.on{background:var(--soft)}
+.dr small{color:var(--muted)}
+#depts{max-height:200px;overflow-y:auto;margin:0 -8px}
 .dr i{display:block;height:8px;border-radius:99px;background:var(--soft);position:relative}
 .dr i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:var(--accent);border-radius:99px}
 .dr b{font-variant-numeric:tabular-nums;font-weight:600}
@@ -95,6 +99,17 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 @media(prefers-reduced-motion:reduce){.feed{animation:none}.split i{transition:none}}
 .ph{padding:40px 12px;text-align:center;color:var(--muted)}
 #printArea{display:none}
+#pdlg,#qdlg{width:min(480px,96vw)}
+.opt{display:block;width:100%;text-align:left;padding:12px 14px;margin-bottom:10px;border-radius:12px}
+.opt b{display:block;margin-bottom:2px}.opt small{color:var(--muted);display:block;line-height:1.4}
+.opt:hover,.opt:focus-visible{border-color:var(--accent);background:var(--soft)}
+progress{width:100%;height:10px;accent-color:var(--accent);margin:10px 0}
+th[data-s]{cursor:pointer;user-select:none}
+th.asc::after{content:" ▲";font-size:.7em}th.desc::after{content:" ▼";font-size:.7em}
+#bdlg{width:min(460px,96vw)}
+.chk{display:flex;gap:8px;align-items:center;margin:0;color:var(--ink)}
+.sheet{box-sizing:border-box;width:210mm;padding:8mm;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.3);margin:0 auto 14px}
+#dlg.wide{width:min(880px,96vw)}
 .foot{display:flex;justify-content:center;gap:12px;margin-top:28px;padding-top:20px;border-top:1px solid var(--line)}
 .foot a{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);transition:color .15s,border-color .15s}
 .foot a:hover,.foot a:focus-visible{color:var(--accent);border-color:var(--accent);outline:none}
@@ -122,12 +137,17 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 .slip .ft{text-align:center;margin-top:8px;border-top:1px dashed #000;padding-top:4px;font-size:11px}
 .slip .brk{page-break-after:always;break-after:page}
 
+.a4pg{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;width:194mm;height:280mm;background:#fff}
+.a4pg .cell{border:1px dashed #999;padding:5mm;display:flex;justify-content:center;align-items:flex-start;overflow:hidden;min-width:0;min-height:0}
+.a4pg .slip{width:100%;margin:0;padding:0;font-size:13px}
 @page{size:80mm auto;margin:0}
 @media print{
  html,body{background:#fff!important}
  .app,dialog{display:none!important}
  #printArea{display:block}
  .slip{padding:3mm 0 6mm}
+ .a4pg{break-after:page;page-break-after:always}
+ .a4pg:last-child{break-after:auto;page-break-after:auto}
 }
 </style>
 <script>try{var t=localStorage.getItem("ppTheme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
@@ -148,6 +168,7 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 
  <section class="panel hero" aria-label="ড্যাশবোর্ড">
   <div>
+   <div class="row" id="dashFilter" style="margin-bottom:8px;display:none"><label for="dashDept" style="margin:0">বিভাগ অনুযায়ী দেখুন:</label><select id="dashDept" style="width:auto;max-width:100%"></select></div>
    <div class="cap">মোট প্রদেয় বেতন <span id="dashMonth"></span></div>
    <div class="amt" id="stNet">৳ 0.00</div>
    <div class="split" aria-hidden="true"><i class="n" id="barN" style="width:100%"></i><i class="d" id="barD" style="width:0"></i></div>
@@ -171,6 +192,8 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
      <div><label for="month">বেতনের মাস</label><input type="month" id="month"></div>
      <div><label for="paydate">পরিশোধের তারিখ</label><input type="date" id="paydate"></div>
     </div>
+    <div class="row" style="margin-top:14px"><label class="chk" for="keep"><input type="checkbox" id="keep">এই ব্রাউজারে তথ্য সংরক্ষণ রাখুন (রিফ্রেশ করলেও থাকবে)</label><button class="ghost" id="clearData">তথ্য মুছে ফেলুন</button></div>
+    <p class="msg">সংরক্ষিত তথ্য শুধু এই ডিভাইসের ব্রাউজারেই থাকে, কোথাও পাঠানো হয় না। শেয়ার্ড কম্পিউটারে এটি চালু না রাখাই ভালো।</p>
    </details>
 
    <section class="panel">
@@ -194,12 +217,15 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
      <div class="sp"></div>
      <input type="search" id="q" placeholder="নাম, আইডি বা বিভাগ অনুসন্ধান করুন" style="max-width:230px">
      <button id="previewBtn" disabled>প্রিন্ট প্রিভিউ</button>
-     <button class="primary" id="printSel" disabled>নির্বাচিত প্রিন্ট করুন</button>
+     <button id="a4Btn" disabled>A4 PDF (৪টি/পাতা)</button>
+     <button class="primary" id="printAll" disabled>সব প্রিন্ট করুন</button>
+     <button id="printSel" disabled>নির্বাচিত প্রিন্ট করুন</button>
     </div>
+    <div class="row" style="margin-bottom:12px"><button class="ghost" id="bulkBtn" disabled>নির্বাচিতদের আয়/কর্তন সমন্বয়</button><button class="ghost" id="csvList" disabled>তালিকা CSV</button><button class="ghost" id="csvDept" disabled>বিভাগভিত্তিক রিপোর্ট CSV</button></div>
     <div class="chips" id="chips"></div>
     <div class="wrap">
      <table>
-      <thead><tr><th><input type="checkbox" id="all" aria-label="সব নির্বাচন"></th><th>কর্মরত সদস্য</th><th class="hm">বিভাগ</th><th class="n hm">মোট আয়</th><th class="n hm">কর্তন</th><th class="n">নিট বেতন</th><th></th></tr></thead>
+      <thead><tr><th><input type="checkbox" id="all" aria-label="সব নির্বাচন"></th><th data-s="name">কর্মরত সদস্য</th><th class="hm" data-s="dept">বিভাগ</th><th class="n hm" data-s="gross">মোট আয়</th><th class="n hm" data-s="tded">কর্তন</th><th class="n" data-s="net">নিট বেতন</th><th></th></tr></thead>
       <tbody id="tb"></tbody>
      </table>
      <div class="empty" id="empty">এখনো কোনো কর্মরত সদস্যের তথ্য যুক্ত করা হয়নি। উপরে ফাইল আপলোড করুন অথবা নমুনা ডেটা লোড করুন।</div>
@@ -221,9 +247,38 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 </div>
 
 <dialog id="dlg">
- <div class="pvhead" id="pvHead"></div>
+ <div class="row" style="margin-bottom:10px"><div class="pvhead" id="pvHead" style="margin:0"></div><div class="sp"></div>
+  <div class="seg" id="pvMode" role="group" aria-label="প্রিভিউয়ের ধরন"><button data-m="slip" aria-pressed="true">৮০ মিমি স্লিপ</button><button data-m="a4" aria-pressed="false">A4 (৪টি/পাতা)</button></div></div>
  <div class="prevbox" id="prev"></div>
+ <p class="msg" style="margin:0 0 10px">PDF হিসেবে সংরক্ষণ করতে প্রিন্ট ডায়ালগে Destination বা Printer থেকে “Save as PDF” নির্বাচন করুন।</p>
  <div class="row"><button class="primary" id="prevPrint">প্রিন্ট করুন</button><button id="prevClose">বন্ধ করুন</button></div>
+</dialog>
+<dialog id="pdlg">
+ <h2 style="margin:0 0 4px">প্রিন্টের ধরন নির্বাচন করুন</h2>
+ <p class="msg" id="pCount" style="margin:0 0 14px"></p>
+ <button class="opt" id="pAll"><b>একসাথে প্রিন্ট</b><small>সব স্লিপ একটি প্রিন্ট জবে যাবে। প্রিন্টারে প্রতি পাতার পর কাটার সেটিং থাকলে নিজে থেকে কাটবে।</small></button>
+ <button class="opt" id="pOne"><b>একটি একটি করে প্রিন্ট</b><small>প্রতিটি স্লিপ আলাদা প্রিন্ট জব হিসেবে যাবে, তাই প্রতিটির পর পেপার কাটবে। প্রতিবার প্রিন্ট ডায়ালগ আসবে; Chrome-এ --kiosk-printing চালু থাকলে ডায়ালগ ছাড়াই সরাসরি প্রিন্ট হবে।</small></button>
+ <div class="row"><button id="pCancel">বাতিল করুন</button></div>
+</dialog>
+<dialog id="qdlg">
+ <h2 style="margin:0 0 4px">একটি একটি করে প্রিন্ট</h2>
+ <p class="msg" id="qText" style="margin:0"></p>
+ <progress id="qBar" value="0" max="1"></progress>
+ <label class="chk" for="qAuto" style="margin-bottom:12px"><input type="checkbox" id="qAuto" checked>একটির পর স্বয়ংক্রিয়ভাবে পরেরটি প্রিন্ট করুন</label>
+ <div class="row"><button class="primary" id="qNext" disabled>পরের স্লিপ প্রিন্ট করুন</button><button id="qAgain" disabled>আগেরটি আবার প্রিন্ট করুন</button><button id="qStop">থামান</button></div>
+ <p class="msg">প্রিন্ট ডায়ালগে Cancel করলেও পরের ধাপে চলে যায়। তাই কোনো স্লিপ বাদ গেলে “আগেরটি আবার প্রিন্ট করুন” চাপুন।</p>
+</dialog>
+<dialog id="bdlg">
+ <h2 style="margin:0 0 4px">আয়/কর্তন সমন্বয়</h2>
+ <p class="msg" id="bCount" style="margin:0 0 12px"></p>
+ <div class="grid" style="grid-template-columns:1fr 1fr">
+  <div><label for="bType">ধরন</label><select id="bType"><option value="earn">আয় যোগ (বোনাস ইত্যাদি)</option><option value="ded">কর্তন যোগ</option></select></div>
+  <div><label for="bLabel">খাতের নাম</label><input type="text" id="bLabel" placeholder="যেমন: Eid Bonus"></div>
+  <div><label for="bMode">হিসাবের ধরন</label><select id="bMode"><option value="fixed">নির্দিষ্ট টাকা</option><option value="pct">মূল বেতনের শতাংশ (%)</option></select></div>
+  <div><label for="bAmt">পরিমাণ</label><input type="number" step="any" id="bAmt" inputmode="decimal"></div>
+ </div>
+ <p class="msg">নির্বাচিত প্রত্যেকের স্লিপে যোগ হবে। পরে প্রত্যেকের সম্পাদনা থেকে “মূল তথ্যে ফিরুন” করা যাবে।</p>
+ <div class="row"><button class="primary" id="bApply">প্রয়োগ করুন</button><button id="bCancel">বাতিল করুন</button></div>
 </dialog>
 <dialog id="edlg">
  <h2 style="margin:0 0 12px">পে-স্লিপ সম্পাদনা</h2>
@@ -409,8 +464,8 @@ const fmt=n=>Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFr
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=n=>'৳ '+fmt(n);
 const wide=matchMedia('(min-width:980px)');
-let act=-1,dept='',lastAct=-2;
-function visible(){const q=$('q').value.trim().toLowerCase();return emps.map((e,i)=>({e,i})).filter(x=>(!dept||x.e.dept===dept)&&(!q||x.e.name.toLowerCase().includes(q)||x.e.id.toLowerCase().includes(q)||x.e.dept.toLowerCase().includes(q)))}
+let act=-1,dept='',dashDept='',lastAct=-2,sortK='',sortD=1;
+function visible0(){const q=$('q').value.trim().toLowerCase();return emps.map((e,i)=>({e,i})).filter(x=>(!dept||x.e.dept===dept)&&(!q||x.e.name.toLowerCase().includes(q)||x.e.id.toLowerCase().includes(q)||x.e.dept.toLowerCase().includes(q)))}
 function render(){
  const depts=[...new Set(emps.map(e=>e.dept).filter(Boolean))];
  if(dept&&!depts.includes(dept))dept='';
@@ -422,7 +477,10 @@ function render(){
  $('count').textContent=emps.length?'('+emps.length+' জন)':'';
  $('printSel').disabled=!sel.size;
  $('printSel').textContent=sel.size?'নির্বাচিত '+sel.size+' জনের প্রিন্ট':'নির্বাচিত প্রিন্ট করুন';
- $('previewBtn').disabled=!emps.length;
+ $('previewBtn').disabled=!emps.length;$('a4Btn').disabled=!emps.length;$('printAll').disabled=!emps.length;
+ $('bulkBtn').disabled=!sel.size;$('csvList').disabled=!emps.length;$('csvDept').disabled=!emps.length;
+ document.querySelectorAll('thead th[data-s]').forEach(t=>{t.classList.toggle('asc',t.dataset.s===sortK&&sortD>0);t.classList.toggle('desc',t.dataset.s===sortK&&sortD<0)});
+ persist();
  $('previewBtn').textContent=sel.size?'প্রিন্ট প্রিভিউ ('+sel.size+' জন)':'প্রিন্ট প্রিভিউ (সবাই)';
  $('all').checked=v.length>0&&v.every(x=>sel.has(x.i));
  renderLive(act!==lastAct);renderStats();
@@ -435,16 +493,25 @@ function renderLive(feed){
  $('livePaper').innerHTML=e?'<div class="paper'+(feed?' feed':'')+'">'+slip(e)+'</div>':'<div class="ph">কর্মরত সদস্য নির্বাচন করলে এখানে পে-স্লিপ প্রদর্শিত হবে।</div>';
 }
 function renderStats(){
- const S=k=>emps.reduce((t,e)=>t+(Number(e[k])||0),0),g=S('gross'),d=S('tded'),n=S('net');
- $('stEmp').textContent=emps.length.toLocaleString('en-IN')+' জন';
+ const depts=[...new Set(emps.map(e=>e.dept).filter(Boolean))];
+ if(dashDept&&!depts.includes(dashDept))dashDept='';
+ const ds=$('dashDept'),opts='<option value="">সব বিভাগ</option>'+depts.map(d=>'<option value="'+esc(d)+'">'+esc(d)+'</option>').join('');
+ if(ds.dataset.k!==opts){ds.innerHTML=opts;ds.dataset.k=opts}
+ ds.value=dashDept;$('dashFilter').style.display=depts.length>1?'flex':'none';
+ const L=dashDept?emps.filter(e=>e.dept===dashDept):emps;
+ const S=k=>L.reduce((t,e)=>t+(Number(e[k])||0),0),g=S('gross'),d=S('tded'),n=S('net');
+ $('stEmp').textContent=L.length.toLocaleString('en-IN')+' জন';
  $('stGross').textContent=money(g);$('stDed').textContent=money(d);$('stNet').textContent=money(n);
  const pn=g?Math.max(0,Math.min(100,Math.round(n/g*100))):100;
  $('barN').style.width=pn+'%';$('barD').style.width=(g?100-pn:0)+'%';$('pN').textContent=pn+'%';$('pD').textContent=(g?100-pn:0)+'%';
- $('dashMonth').textContent=mon()?'('+mon()+')':'';
- const m={};emps.forEach(e=>{if(e.dept)m[e.dept]=(m[e.dept]||0)+e.net});
- const a=Object.entries(m).sort((x,y)=>y[1]-x[1]).slice(0,4),mx=a.length?a[0][1]:1;
- $('depts').innerHTML=a.length>1?a.map(([k,v])=>`<div class="dr"><span>${esc(k)}</span><i style="--w:${Math.max(3,v/mx*100)}%"></i><b>${fmt(v)}</b></div>`).join(''):'';
+ $('dashMonth').textContent=(dashDept?'— '+dashDept+' ':'')+(mon()?'('+mon()+')':'');
+ const m={};emps.forEach(e=>{if(e.dept){const o=m[e.dept]||(m[e.dept]={v:0,c:0});o.v+=e.net;o.c++}});
+ const a=Object.entries(m).sort((x,y)=>y[1].v-x[1].v),mx=a.length?Math.max(a[0][1].v,1):1;
+ $('depts').innerHTML=a.length>1?a.map(([k,o])=>`<div class="dr${k===dashDept?' on':''}" data-d="${esc(k)}" role="button" tabindex="0" title="${esc(k)}"><span>${esc(k)} <small>(${o.c})</small></span><i style="--w:${Math.max(3,o.v/mx*100)}%"></i><b>${fmt(o.v)}</b></div>`).join(''):'';
 }
+$('dashDept').onchange=e=>{dashDept=e.target.value;renderStats()};
+const pickDept=e=>{const r=e.target.closest('.dr');if(!r)return;if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ')return;e.preventDefault();dashDept=dashDept===r.dataset.d?'':r.dataset.d;renderStats()};
+$('depts').addEventListener('click',pickDept);$('depts').addEventListener('keydown',pickDept);
 ['month','company','address','phone','footer','paydate'].forEach(i=>$(i).addEventListener('input',()=>{renderLive(false);renderStats()}));
 $('q').oninput=render;
 $('all').onchange=e=>{visible().forEach(x=>e.target.checked?sel.add(x.i):sel.delete(x.i));render()};
@@ -464,16 +531,93 @@ $('tb').addEventListener('click',e=>{
 $('livePrint').onclick=()=>emps[act]&&printList([emps[act]]);
 $('prevClose').onclick=()=>$('dlg').close();
 $('printSel').onclick=()=>printList([...sel].sort((a,b)=>a-b).map(i=>emps[i]));
-function openPreview(list){
- if(!list.length)return;
- curList=list;
- $('pvHead').textContent='প্রিন্ট প্রিভিউ: '+list.length+'টি পে-স্লিপ (৮০ মিমি পেপার)';
- $('prev').innerHTML=list.map(e=>'<div class="paper">'+slip(e)+'</div>').join('');
- $('prev').scrollTop=0;
- $('dlg').showModal();
+let pvMode='slip';
+const pickList=()=>sel.size?[...sel].sort((a,b)=>a-b).map(i=>emps[i]):emps.slice();
+function a4html(list,wrap){
+ let h='';
+ for(let i=0;i<list.length;i+=4){
+  const pg='<div class="a4pg">'+list.slice(i,i+4).map(e=>'<div class="cell">'+slip(e)+'</div>').join('')+'</div>';
+  h+=wrap?'<div class="sheet">'+pg+'</div>':pg;
+ }
+ return h;
 }
-$('previewBtn').onclick=()=>openPreview(sel.size?[...sel].sort((a,b)=>a-b).map(i=>emps[i]):emps.slice());
-$('prevPrint').onclick=()=>{$('dlg').close();printList(curList)};
+function fitA4(root){
+ root.querySelectorAll('.cell').forEach(c=>{
+  const s=c.firstElementChild;s.style.zoom='';
+  const cs=getComputedStyle(c),av=c.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom),h=s.scrollHeight;
+  if(h>av)s.style.zoom=Math.max(.5,av/h);
+ });
+}
+function renderPreview(){
+ const n=curList.length,a4=pvMode==='a4';
+ document.querySelectorAll('#pvMode button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===pvMode));
+ $('dlg').classList.toggle('wide',a4);
+ $('prevPrint').textContent=a4?'A4 প্রিন্ট / PDF সংরক্ষণ':'প্রিন্ট করুন';
+ $('pvHead').textContent=a4?'A4 প্রিভিউ: '+n+'টি পে-স্লিপ, '+Math.ceil(n/4)+'টি পাতা (প্রতি পাতায় ৪টি)':'প্রিন্ট প্রিভিউ: '+n+'টি পে-স্লিপ (৮০ মিমি পেপার)';
+ if(a4){
+  $('prev').innerHTML=a4html(curList,true);
+  fitA4($('prev'));
+  const z=Math.min(1,($('prev').clientWidth-28)/793.7);
+  document.querySelectorAll('#prev .sheet').forEach(x=>x.style.zoom=z);
+ }else $('prev').innerHTML=curList.map(e=>'<div class="paper">'+slip(e)+'</div>').join('');
+ $('prev').scrollTop=0;
+}
+function openPreview(list,mode){
+ if(!list.length)return;
+ curList=list;pvMode=mode||'slip';
+ $('dlg').showModal();renderPreview();
+}
+$('pvMode').onclick=e=>{const b=e.target.closest('button');if(b){pvMode=b.dataset.m;renderPreview()}};
+$('previewBtn').onclick=()=>openPreview(pickList());
+$('a4Btn').onclick=()=>openPreview(pickList(),'a4');
+$('prevPrint').onclick=()=>{$('dlg').close();(pvMode==='a4'?printA4:printList)(curList)};
+
+/* Sort, export, bulk adjust, keep data */
+function visible(){
+ const r=visible0();
+ if(sortK)r.sort((a,b)=>{const x=a.e[sortK],y=b.e[sortK];return (typeof x==='number'?x-y:String(x||'').localeCompare(String(y||''),'bn'))*sortD});
+ return r;
+}
+document.querySelector('thead').onclick=e=>{
+ const t=e.target.closest('th[data-s]');if(!t)return;
+ const k=t.dataset.s;
+ sortD=sortK===k?-sortD:(['gross','tded','net'].includes(k)?-1:1);sortK=k;render();
+};
+function dlCsv(name,rows){
+ const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+ const a=document.createElement('a');
+ a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(rows.map(r=>r.map(q).join(',')).join('\n'));
+ a.download=name;a.click();
+}
+$('csvList').onclick=()=>dlCsv('PeoplePayslip-list.csv',[['ID','Name','Department','Designation','Basic','Gross','Deduction','Net'],...visible().map(({e})=>[e.id,e.name,e.dept,e.desig,e.basic,e.gross,e.tded,e.net])]);
+$('csvDept').onclick=()=>{
+ const m={};emps.forEach(e=>{const k=e.dept||'Other',o=m[k]||(m[k]=[0,0,0,0]);o[0]++;o[1]+=e.gross;o[2]+=e.tded;o[3]+=e.net});
+ const rows=Object.entries(m).sort((a,b)=>b[1][3]-a[1][3]).map(([k,o])=>[k,...o]);
+ const t=rows.reduce((a,r)=>a.map((v,i)=>v+(r[i+1]||0)),[0,0,0,0]);
+ dlCsv('PeoplePayslip-department-report.csv',[['Department','Members','Gross','Deduction','Net'],...rows,['Total',...t]]);
+};
+$('bulkBtn').onclick=()=>{$('bCount').textContent=sel.size+' জন নির্বাচিত';$('bdlg').showModal()};
+$('bCancel').onclick=()=>$('bdlg').close();
+$('bApply').onclick=()=>{
+ const lab=$('bLabel').value.trim(),v=parseFloat($('bAmt').value)||0;
+ if(!lab){$('bLabel').focus();return}
+ if(!v){$('bAmt').focus();return}
+ const k=$('bType').value,pct=$('bMode').value==='pct';
+ sel.forEach(i=>{
+  const e=emps[i];if(!e.orig)e.orig=JSON.stringify(e);
+  const amt=Math.round((pct?e.basic*v/100:v)*100)/100;if(!amt)return;
+  const f=e[k].find(x=>x.label===lab);f?f.amt+=amt:e[k].push({label:lab,amt});
+  e.gross=e.basic+e.earn.reduce((t,x)=>t+x.amt,0);e.tded=e.ded.reduce((t,x)=>t+x.amt,0);e.net=e.gross-e.tded;e.edited=true;
+ });
+ $('bdlg').close();render();
+};
+function persist(){try{if($('keep').checked)localStorage.setItem('slipData',JSON.stringify(emps))}catch(e){}}
+$('keep').onchange=()=>{try{localStorage.setItem('slipKeep',$('keep').checked?'1':'');if($('keep').checked)persist();else localStorage.removeItem('slipData')}catch(e){}};
+$('clearData').onclick=()=>{
+ if(!confirm('সব কর্মরত সদস্যের তথ্য মুছে ফেলা হবে। নিশ্চিত?'))return;
+ try{localStorage.removeItem('slipData')}catch(e){}
+ emps=[];sel=new Set();render();status('তথ্য মুছে ফেলা হয়েছে।');
+};
 
 /* Edit payslip */
 let editI=-1;
@@ -525,6 +669,7 @@ function applyTheme(t){
  applyTheme(t);
  $('theme').onclick=e=>{const b=e.target.closest('button');if(!b)return;applyTheme(b.dataset.t);try{localStorage.setItem('ppTheme',b.dataset.t)}catch(err){}};
 })();
+try{if(localStorage.getItem('slipKeep')==='1'){$('keep').checked=true;const d=JSON.parse(localStorage.getItem('slipData')||'null');if(Array.isArray(d)&&d.length){emps=d;status(d.length+' জন কর্মরত সদস্যের সংরক্ষিত তথ্য লোড করা হয়েছে।')}}}catch(e){}
 render();
 
 /* Slip */
@@ -561,9 +706,51 @@ function slip(e){
 }
 function printList(list){
  if(!list.length)return;
+ $('printArea').className='';const o=document.getElementById('pgStyle');if(o)o.remove();
  $('printArea').innerHTML=list.map((e,i)=>slip(e).replace('class="slip"','class="slip'+(i<list.length-1?' brk':'')+'"')).join('');
  setTimeout(()=>window.print(),50);
 }
+function printA4(list){
+ if(!list.length)return;
+ const pa=$('printArea');
+ pa.className='a4';pa.innerHTML=a4html(list,false);
+ pa.style.cssText='display:block;position:absolute;left:-9999px;top:0';
+ fitA4(pa);pa.style.cssText='';
+ let st=document.getElementById('pgStyle');
+ if(!st){st=document.createElement('style');st.id='pgStyle';document.head.appendChild(st)}
+ st.textContent='@page{size:A4 portrait;margin:8mm}';
+ setTimeout(()=>window.print(),50);
+}
+window.addEventListener('afterprint',()=>{
+ const st=document.getElementById('pgStyle');if(st)st.remove();$('printArea').className='';
+ if(q.run&&q.waiting){q.waiting=false;q.i++;updateQ();if($('qAuto').checked)setTimeout(nextJob,800)}
+});
+/* One-by-one print queue */
+let q={list:[],i:0,run:false,waiting:false};
+function updateQ(){
+ const n=q.list.length,done=q.i>=n;
+ $('qBar').max=n;$('qBar').value=q.i;
+ $('qText').textContent=done?'সব '+n+'টি স্লিপ প্রিন্ট সম্পন্ন হয়েছে।':(q.waiting?'প্রিন্ট হচ্ছে: ':'পরবর্তী: ')+(q.i+1)+'/'+n+', '+q.list[q.i].name;
+ $('qNext').disabled=q.waiting||done;
+ $('qAgain').disabled=q.waiting||q.i===0;
+ $('qStop').textContent=done?'বন্ধ করুন':'থামান';
+}
+function nextJob(){
+ if(!q.run||q.waiting||q.i>=q.list.length)return;
+ const o=document.getElementById('pgStyle');if(o)o.remove();
+ $('printArea').className='';$('printArea').innerHTML=slip(q.list[q.i]);
+ q.waiting=true;updateQ();
+ setTimeout(()=>window.print(),300);
+}
+function startQueue(list){q={list,i:0,run:true,waiting:false};$('qdlg').showModal();nextJob()}
+$('printAll').onclick=()=>{const l=pickList();$('pCount').textContent=l.length+' জনের পে-স্লিপ'+(sel.size?' (নির্বাচিত)':' (সবাই)');$('pdlg').showModal()};
+$('pCancel').onclick=()=>$('pdlg').close();
+$('pAll').onclick=()=>{$('pdlg').close();printList(pickList())};
+$('pOne').onclick=()=>{$('pdlg').close();startQueue(pickList())};
+$('qNext').onclick=nextJob;
+$('qAgain').onclick=()=>{q.i=Math.max(0,q.i-1);nextJob()};
+$('qStop').onclick=()=>{q.run=false;q.waiting=false;$('qdlg').close()};
+$('qdlg').addEventListener('close',()=>{q.run=false;q.waiting=false});
 </script>
 </body>
 </html>
